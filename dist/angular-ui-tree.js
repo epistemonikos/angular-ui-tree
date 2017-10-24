@@ -198,8 +198,8 @@
 
   angular.module('ui.tree')
 
-    .controller('TreeNodesController', ['$scope', '$element',
-      function ($scope, $element) {
+    .controller('TreeNodesController', ['$scope', '$element', '$timeout', '$q',
+      function ($scope, $element, $timeout, $q) {
         this.scope = $scope;
 
         $scope.$element = $element;
@@ -243,22 +243,11 @@
           return $scope.$modelValue.length > 0;
         };
 
-        $scope.safeApply = function (fn) {
-          var phase = this.$root.$$phase;
-          if (phase == '$apply' || phase == '$digest') {
-            if (fn && (typeof (fn) === 'function')) {
-              fn();
-            }
-          } else {
-            this.$apply(fn);
-          }
-        };
-
         //Called in apply method of UiTreeHelper.dragInfo.
         $scope.removeNode = function (node) {
           var index = $scope.$modelValue.indexOf(node.$modelValue);
           if (index > -1) {
-            $scope.safeApply(function () {
+            $timeout(function () {
               $scope.$modelValue.splice(index, 1)[0];
             });
             return $scope.$treeScope.$callbacks.removed(node);
@@ -268,9 +257,12 @@
 
         //Called in apply method of UiTreeHelper.dragInfo.
         $scope.insertNode = function (index, nodeData) {
-          $scope.safeApply(function () {
+          promise = $q.defer().promise;
+          $timeout(function () {
             $scope.$modelValue.splice(index, 0, nodeData);
+            promise.resolve();
           });
+          return promise;
         };
 
         $scope.childNodes = function () {
@@ -1264,10 +1256,12 @@
                     .then(function (allowDrop) {
                       if (allowDrop !== false && scope.$$allowNodeDrop) {
                         //Node drop accepted.
-                        dragInfo.apply();
+                        promise = dragInfo.apply();
 
                         //Fire the dropped callback only if the move was successful.
-                        scope.$treeScope.$callbacks.dropped(dragEventArgs);
+                        promise.then(function () {
+                          scope.$treeScope.$callbacks.dropped(dragEventArgs);
+                        })
                       } else {
                         //Drop canceled - revert the node to its original position.
                         bindDragStartEvents();
@@ -1658,11 +1652,11 @@
 
                 //CloneEnabled and cross-tree so copy and do not remove from source.
                 if (this.isClone() && this.isForeign()) {
-                  this.parent.insertNode(this.index, this.sourceInfo.cloneModel);
+                  return this.parent.insertNode(this.index, this.sourceInfo.cloneModel);
                 //Any other case, remove and reinsert.
                 } else {
                   this.source.remove();
-                  this.parent.insertNode(this.index, nodeData);
+                  return this.parent.insertNode(this.index, nodeData);
                 }
               }
             };

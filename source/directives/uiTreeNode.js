@@ -650,10 +650,12 @@
                     .then(function (allowDrop) {
                       if (allowDrop !== false && scope.$$allowNodeDrop) {
                         //Node drop accepted.
-                        dragInfo.apply();
+                        promise = dragInfo.apply();
 
                         //Fire the dropped callback only if the move was successful.
-                        scope.$treeScope.$callbacks.dropped(dragEventArgs);
+                        promise.then(function () {
+                          scope.$treeScope.$callbacks.dropped(dragEventArgs);
+                        })
                       } else {
                         //Drop canceled - revert the node to its original position.
                         bindDragStartEvents();

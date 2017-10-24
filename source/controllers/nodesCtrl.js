@@ -3,8 +3,8 @@
 
   angular.module('ui.tree')
 
-    .controller('TreeNodesController', ['$scope', '$element', '$timeout',
-      function ($scope, $element, $timeout) {
+    .controller('TreeNodesController', ['$scope', '$element', '$timeout', '$q',
+      function ($scope, $element, $timeout, $q) {
         this.scope = $scope;
 
         $scope.$element = $element;
@@ -62,9 +62,12 @@
 
         //Called in apply method of UiTreeHelper.dragInfo.
         $scope.insertNode = function (index, nodeData) {
+          promise = $q.defer().promise;
           $timeout(function () {
             $scope.$modelValue.splice(index, 0, nodeData);
+            promise.resolve();
           });
+          return promise;
         };
 
         $scope.childNodes = function () {
