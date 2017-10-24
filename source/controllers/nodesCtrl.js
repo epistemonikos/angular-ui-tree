@@ -62,12 +62,12 @@
 
         //Called in apply method of UiTreeHelper.dragInfo.
         $scope.insertNode = function (index, nodeData) {
-          promise = $q.defer().promise;
+          var promise = $q.defer();
           $timeout(function () {
             $scope.$modelValue.splice(index, 0, nodeData);
             promise.resolve();
           });
-          return promise;
+          return promise.promise;
         };
 
         $scope.childNodes = function () {
